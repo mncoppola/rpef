@@ -1,0 +1,69 @@
+{
+  "Meta":{
+    "Targets":[
+      {
+        "Vendor":"Linksys",
+        "Model":"WRT120N",
+        "Version":"1.0.07 (Build 02)",
+        "Status":"Roadblock"
+      }
+    ],
+    "Authors":[
+      "Michael Coppola"
+    ],
+    "Date":"March 06, 2012",
+    "Size":1251338,
+    "NeedsRoot":false,
+    "Filename":"FW_WRT120N_1.0.07.002_US.bin",
+    "Download":"http://homedownloads.cisco.com/downloads/firmware/1224646102739/FW_WRT120N_1.0.07.002_US.bin",
+    "Checksum":"26a71fdfeb87a6deb95a61cdb5fb09e8"
+  },
+  "OrderOfOperations":[
+    "ExtractParts",
+    "UnpackFS",
+    "_PAYLOAD_",
+    "BuildFS",
+    "PackImage",
+    "PadImage",
+    "Footer"
+  ],
+  "ExtractParts":{
+    "Description":"Extracting parts from firmware image",
+    "Steps":[
+      ["extract", "_FIRMWARE_IMG_", 0, 1041408, "/headerkernel.bin"],
+      ["extract", "_FIRMWARE_IMG_", 1041408, 209360, "/filesystem.lzma"],
+      ["extract", "_FIRMWARE_IMG_", 1251308, 30, "/footer.bin"]
+    ]
+  },
+  "UnpackFS":{
+    "Description":"Unpacking filesystem",
+    "Steps":[
+      ["lzma-decomp", "/filesystem.lzma", "/filesystem.bin"],
+      ["unpfs", "/filesystem.bin", "/extracted_fs"]
+    ]
+  },
+  "BuildFS":{
+    "Description":"Building filesystem",
+    "Steps":[
+    ]
+  },
+  "PackImage":{
+    "Description":"Gluing parts together",
+    "Steps":[
+    ]
+  },
+  "PadImage":{
+    "Description":"Padding image with 0xff",
+    "Steps":[
+      ["pad", "_TARGET_IMG_", 255, 1251308]
+    ]
+  },
+  "Footer":{
+    "Description":"Appending footer to image",
+    "Steps":[
+      ["appendfile", "/footer.bin", "_TARGET_IMG_"]
+    ]
+  },
+  "Payloads":{
+  }
+}
